@@ -1,0 +1,57 @@
+note: "AlphaDTA_baseline"
+model_type: "baseline"
+
+# Training
+max_epochs: 600
+patience: 12
+max_grad_norm: 0.5
+
+batch_size: 128
+learning_rate: 1.0e-4
+weight_decay: 1.0e-5
+accum_steps: 1
+
+use_warmup: true
+warmup_epochs: 3
+
+# Model Architecture
+init_ign_weight: 0.6
+
+# IGN Configuration
+ign_config:
+  node_feat_size: 40
+  edge_feat_size:  21
+  num_layers:  2
+  graph_feat_size: 128
+  outdim_g3: 128
+
+# Embedding Encoder Configuration
+emb_encoder_config:
+  single_in_dim: 384
+  pair_in_dim:  128
+  hidden_dim:  128
+  num_heads: 4
+  dropout: 0.25
+  num_protein_layers: 3
+  num_ligand_layers:  3
+
+# Dropout
+graph_dropout: 0.2
+fusion_dropout: 0.2
+fc_dropout: 0.2
+
+# FC Predictor
+fc_hidden_dim: 128
+fc_num_layers:  2
+
+# Data Paths
+csv_dir: "data/csv/lp_pdbbind"
+embedding_dirs: 
+  - "data/af3_embedding/shared"
+  - "data/af3_embedding/lp_only"
+train_graph_bin_dir:  "data/interaction_graph/train-valid/lp_train_graph_ls"
+valid_graph_bin_dir: "data/interaction_graph/train-valid/lp_valid_graph_ls"
+test_graph_bin_dir:  "data/interaction_graph/test/crystal/lp_test_graph_ls"
+
+# Loss
+loss: "mse"
