@@ -2,7 +2,7 @@
 
 ![AlphaDTA Architecture](Overview.png)
 
-AlphaDTA is a deep learning framework for protein-ligand binding affinity prediction that leverages AlphaFold3 embeddings and structural information.
+AlphaDTA is a deep learning framework for protein-ligand binding affinity prediction that leverages AlphaFold3 embeddings and 3D complex structure information.
 
 ## Environment Setup
 
