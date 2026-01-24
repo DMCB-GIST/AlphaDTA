@@ -56,7 +56,7 @@ Pre-trained model checkpoints are stored in `checkpoints/alphadta` as `.pth` fil
 
 ## Evaluation
 
-### LP-PDBBind
+### LP-PDBbind
 
 ```bash
 python protocols/lp_pdbbind/evaluate.py --model_path {model_path}
@@ -74,7 +74,7 @@ python protocols/cleansplit/evaluate_casf2016.py \
 
 ## Training
 
-### LP-PDBBind
+### LP-PDBbind
 
 ```bash
 python protocols/lp_pdbbind/train.py \
