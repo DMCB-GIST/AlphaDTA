@@ -62,7 +62,7 @@ Pre-trained model checkpoints are stored in `checkpoints/alphadta` as `.pth` fil
 python protocols/lp_pdbbind/evaluate.py --model_path {model_path}
 ```
 
-### CleanSplit (CASF-2016)
+### PDBbind CleanSplit (CASF2016)
 
 ```bash
 python protocols/cleansplit/evaluate_casf2016.py \
@@ -86,7 +86,7 @@ python protocols/lp_pdbbind/train.py \
 
 Training results will be saved to `output/lp_pdbbind`.
 
-### CleanSplit
+### PDBbind CleanSplit
 
 ```bash
 python protocols/cleansplit/train.py \
@@ -201,12 +201,15 @@ If you use AlphaDTA in your research, please cite:
   publisher={ACS Publications}
 }
 
-@article{li2024leak,
-  title={Leak proof PDBBind: A reorganized dataset of protein-ligand complexes for more generalizable binding affinity prediction},
+@article{li2026leak,
+  title={Leak Proof PDBBind: A Reorganized Data Set of Protein--Ligand Complexes for More Generalizable Binding Affinity Prediction},
   author={Li, Jie and Guan, Xingyi and Zhang, Oufan and Sun, Kunyang and Wang, Yingze and Bagni, Dorian and Head-Gordon, Teresa},
-  journal={ArXiv},
-  pages={arXiv--2308},
-  year={2024}
+  journal={The Journal of Physical Chemistry B},
+  volume={130},
+  number={2},
+  pages={730--740},
+  year={2026},
+  publisher={ACS Publications}
 }
 
 @article{graber2025resolving,
