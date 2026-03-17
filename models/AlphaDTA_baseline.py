@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from typing import Tuple
 from models.IGN import ModifiedAttentiveFPPredictorV2, DTIConvGraph3Layer, EdgeWeightedSumAndMax, FC
 
+# Here, AlphaDTA_baseline denotes AlphaDTA (Simplified MGE), as referred to in the paper.
 
 class SimpleSingleExtractor(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, dropout: float = 0.15):

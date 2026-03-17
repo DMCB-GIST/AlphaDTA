@@ -1,3 +1,4 @@
+# Here, AlphaDTA_baseline denotes AlphaDTA (Simplified MGE), as referred to in the paper.
 note: "AlphaDTA_baseline"
 model_type: "baseline"
 

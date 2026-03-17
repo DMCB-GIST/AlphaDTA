@@ -300,9 +300,9 @@ class PairExtractor(nn.Module):
         return self.pooling(pair_emb, interaction_mask)
 
 
-class DeepSingleExtractor(nn.Module):
+class FineGrainedExtractor(nn.Module):
     """
-    Deep path: Protein/Ligand Transformer blocks + Cross-attention.
+    Protein/Ligand Transformer blocks + Cross-attention.
     """
     def __init__(self, hidden_dim: int, num_heads: int = 4, 
                  ff_mult: int = 4, dropout: float = 0.2,
@@ -406,9 +406,9 @@ class DeepSingleExtractor(nn.Module):
         return torch.cat([protein_feat, ligand_feat], dim=-1)
 
 
-class ShallowSingleExtractor(nn.Module):
+class CoarseGrainedExtractor(nn.Module):
     """
-    Shallow path: Single Transformer block for efficiency.
+    Single Transformer block for efficiency.
     """
     def __init__(self, hidden_dim: int, num_heads: int = 4, 
                  ff_mult: int = 4, dropout: float = 0.15):
@@ -442,10 +442,10 @@ class ShallowSingleExtractor(nn.Module):
 
 class TripleAdaptiveFusion(nn.Module):
     """
-    3-way adaptive fusion: IGN / Deep / Shallow.
+    3-way adaptive fusion: IGN / Fine / Coarse.
     Softmax-normalized learnable weights.
     """
-    def __init__(self, ign_dim: int, deep_dim: int, shallow_dim: int,
+    def __init__(self, ign_dim: int, fine_dim: int, coarse_dim: int,
                  output_dim: int, init_weights: Tuple[float, float, float] = (0.4, 0.3, 0.3)):
         super().__init__()
         
@@ -460,23 +460,23 @@ class TripleAdaptiveFusion(nn.Module):
         
         # Projections (only if dimensions differ)
         self.ign_proj = nn.Linear(ign_dim, output_dim) if ign_dim != output_dim else nn.Identity()
-        self.deep_proj = nn.Linear(deep_dim, output_dim) if deep_dim != output_dim else nn.Identity()
-        self.shallow_proj = nn.Linear(shallow_dim, output_dim) if shallow_dim != output_dim else nn.Identity()
+        self.fine_proj = nn.Linear(fine_dim, output_dim) if fine_dim != output_dim else nn.Identity()
+        self.coarse_proj = nn.Linear(coarse_dim, output_dim) if coarse_dim != output_dim else nn.Identity()
 
     def get_weights(self) -> Tuple[float, float, float]:
         with torch.no_grad():
             weights = F.softmax(self.fusion_logits, dim=0)
         return tuple(weights.cpu().tolist())
 
-    def forward(self, ign_feat: torch.Tensor, deep_feat: torch.Tensor,
-                shallow_feat: torch.Tensor) -> torch.Tensor:
+    def forward(self, ign_feat: torch.Tensor, fine_feat: torch.Tensor,
+                coarse_feat: torch.Tensor) -> torch.Tensor:
         weights = F.softmax(self.fusion_logits, dim=0)
         
         ign = self.ign_proj(ign_feat)
-        deep = self.deep_proj(deep_feat)
-        shallow = self.shallow_proj(shallow_feat)
+        fine = self.fine_proj(fine_feat)
+        coarse = self.coarse_proj(coarse_feat)
         
-        return weights[0] * ign + weights[1] * deep + weights[2] * shallow
+        return weights[0] * ign + weights[1] * fine + weights[2] * coarse
 
 
 class AlphaDTA(nn.Module):
@@ -524,8 +524,8 @@ class AlphaDTA(nn.Module):
             symmetrize=emb_encoder_config.get('symmetrize_pair', True)
         )
         
-        # Deep Path
-        self.deep_extractor = DeepSingleExtractor(
+        # Fine-grained
+        self.fine_extractor = FineGrainedExtractor(
             hidden_dim=hidden_dim,
             num_heads=emb_encoder_config['num_heads'],
             ff_mult=ff_mult,
@@ -534,8 +534,8 @@ class AlphaDTA(nn.Module):
             num_ligand_layers=emb_encoder_config['num_ligand_layers']
         )
         
-        # Deep fusion: [protein, ligand, pair] -> hidden_dim
-        self.deep_fusion = nn.Sequential(
+        # Fine-grained fusion: [protein, ligand, pair] -> hidden_dim
+        self.fine_fusion = nn.Sequential(
             nn.Linear(hidden_dim * 3, hidden_dim * 2),
             nn.LayerNorm(hidden_dim * 2),
             nn.GELU(),
@@ -545,16 +545,16 @@ class AlphaDTA(nn.Module):
             nn.Dropout(fusion_dropout)
         )
         
-        # Shallow Path
-        self.shallow_extractor = ShallowSingleExtractor(
+        # Coarse-grained
+        self.coarse_extractor = CoarseGrainedExtractor(
             hidden_dim=hidden_dim,
             num_heads=emb_encoder_config['num_heads'],
             ff_mult=ff_mult,
             dropout=emb_encoder_config['dropout']
         )
         
-        # Shallow fusion: [single, pair] -> hidden_dim
-        self.shallow_fusion = nn.Sequential(
+        # Coarse-grained fusion: [single, pair] -> hidden_dim
+        self.coarse_fusion = nn.Sequential(
             nn.Linear(hidden_dim * 2, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.GELU(),
@@ -566,15 +566,15 @@ class AlphaDTA(nn.Module):
             fusion_output_dim = ign_feature_dim
         
         emb_encoder_weight = 1.0 - init_ign_weight
-        init_deep_weight = emb_encoder_weight * 0.5
-        init_shallow_weight = emb_encoder_weight * 0.5
+        init_fine_weight = emb_encoder_weight * 0.5
+        init_coarse_weight = emb_encoder_weight * 0.5
         
         self.fusion = TripleAdaptiveFusion(
             ign_dim=ign_feature_dim,
-            deep_dim=hidden_dim,
-            shallow_dim=hidden_dim,
+            fine_dim=hidden_dim,
+            coarse_dim=hidden_dim,
             output_dim=fusion_output_dim,
-            init_weights=(init_ign_weight, init_deep_weight, init_shallow_weight)
+            init_weights=(init_ign_weight, init_fine_weight, init_coarse_weight)
         )
         
         # Final Predictor
@@ -644,16 +644,16 @@ class AlphaDTA(nn.Module):
         single_proj = self.single_proj(single_emb)
         pair_feat = self.pair_extractor(pair_emb, protein_length, token_length)
         
-        # === Deep Path ===
-        deep_single_feat = self.deep_extractor(single_proj, protein_length, token_length)
-        deep_feat = self.deep_fusion(torch.cat([deep_single_feat, pair_feat], dim=-1))
+        # === Fine-grained ===
+        fine_single_feat = self.fine_extractor(single_proj, protein_length, token_length)
+        fine_feat = self.fine_fusion(torch.cat([fine_single_feat, pair_feat], dim=-1))
         
-        # === Shallow Path ===
-        shallow_single_feat = self.shallow_extractor(single_proj, token_length)
-        shallow_feat = self.shallow_fusion(torch.cat([shallow_single_feat, pair_feat], dim=-1))
+        # === Coarse-grained ===
+        coarse_single_feat = self.coarse_extractor(single_proj, token_length)
+        coarse_feat = self.coarse_fusion(torch.cat([coarse_single_feat, pair_feat], dim=-1))
         
         # === Fusion ===
-        fused_features = self.fusion(ign_features, deep_feat, shallow_feat)
+        fused_features = self.fusion(ign_features, fine_feat, coarse_feat)
         
         # === Prediction ===
         affinity = self.predictor(fused_features).squeeze(-1)
@@ -662,13 +662,13 @@ class AlphaDTA(nn.Module):
 
     def get_fusion_info(self) -> dict:
         """Get fusion weights and info."""
-        ign_w, deep_w, shallow_w = self.fusion.get_weights()
+        ign_w, fine_w, coarse_w = self.fusion.get_weights()
         return {
             'strategy': 'triple_adaptive',
             'ign_weight': ign_w,
-            'deep_weight': deep_w,
-            'shallow_weight': shallow_w,
-            'emb_encoder_total_weight': deep_w + shallow_w
+            'fine_weight': fine_w,
+            'coarse_weight': coarse_w,
+            'emb_encoder_total_weight': fine_w + coarse_w
         }
 
 
