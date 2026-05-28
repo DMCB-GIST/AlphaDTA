@@ -306,7 +306,7 @@ class FineGrainedExtractor(nn.Module):
     """
     def __init__(self, hidden_dim: int, num_heads: int = 4, 
                  ff_mult: int = 4, dropout: float = 0.2,
-                 num_protein_layers: int = 2, num_ligand_layers: int = 3):
+                 num_protein_layers: int = 2, num_ligand_layers: int = 2):
         super().__init__()
         
         self.hidden_dim = hidden_dim
@@ -685,7 +685,7 @@ def create_AlphaDTA(
     emb_encoder_num_heads: int = 4,
     emb_encoder_ff_mult: int = 4,
     emb_encoder_num_protein_layers: int = 2,
-    emb_encoder_num_ligand_layers: int = 3,
+    emb_encoder_num_ligand_layers: int = 2,
     emb_encoder_dropout: float = 0.25,
     
     # IGN settings
