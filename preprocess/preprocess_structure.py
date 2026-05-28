@@ -1,4 +1,3 @@
-```python
 #!/usr/bin/env python3
 """
 AF3 CIF -> IGN Graph Preprocessing Pipeline
@@ -825,4 +824,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
