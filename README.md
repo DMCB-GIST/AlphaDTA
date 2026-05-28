@@ -50,7 +50,7 @@ Run the data download script to fetch the preprocessed dataset:
 python utils/download_data.py
 ```
 
-This will create a `data` folder in the repository. The dataset is hosted on [Hugging Face](https://huggingface.co/datasets/minjae-chung/alphadta).
+This will create a `data` folder in the repository. The dataset is hosted on [Hugging Face](https://huggingface.co/datasets/DMCB-GIST/alphadta).
 
 Pre-trained model checkpoints are stored in `checkpoints/alphadta` as `.pth` files.
 
@@ -171,6 +171,19 @@ python preprocess/preprocess_structure.py \
 
 This generates:
 - `processed_structure/graph_ls` containing interaction graphs
+
+### Optional: Start from Existing IGN Inputs
+
+If you already have IGN input files, such as those provided in the PDBbind2020 release, you can skip the AF3/CIF-to-structure preprocessing steps and generate graphs directly:
+
+```bash
+python preprocess/preprocess_structure.py \
+    --dataset_dir /path/to/custom_dataset \
+    --label_csv /path/to/custom_split.csv \
+    --start_from ign_input \
+    --num_process 12 \
+    --verbose
+```
 
 You can now use the preprocessed embeddings and graphs as input to AlphaDTA.
 
